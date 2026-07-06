@@ -61,6 +61,7 @@ Recent conversation:
 ${context.recentConversation || '(none)'}
 
 ${context.pendingAction ? `You previously asked something - pending: ${context.pendingAction}. Interpret short replies ("yes", "no", "done") against that.` : ''}
+${context.pendingAction === 'awaiting_wake_up_reply' ? `The user just woke up (or is about to reply that they did). When they greet you or say they're up: call get_briefing for today and lay out their timetable - times, tasks, first fixed commitment. Warm, brief, no lecture.` : ''}
 `.trim();
 }
 

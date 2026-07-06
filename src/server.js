@@ -1,7 +1,7 @@
 require('dotenv').config();
 const app = require('./app');
 const connectDB = require('./config/db');
-const { startCronJobs } = require('./services/reminderService');
+const { startScheduler } = require('./services/schedulerService');
 
 const PORT = process.env.PORT || 3000;
 
@@ -10,8 +10,8 @@ const initServer = async () => {
     // 1. Connect to Database first
     await connectDB();
 
-    // 2. Start Reminder Daemon
-    startCronJobs();
+    // 2. Start durable job scheduler (morning quote, T-5 reminders, reviews)
+    await startScheduler();
 
     // 3. Open Express Server
     app.listen(PORT, () => {
