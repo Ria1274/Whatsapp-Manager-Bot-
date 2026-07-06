@@ -83,6 +83,27 @@ const taskSchema = new mongoose.Schema(
       default: 'medium',
     },
 
+    // Life domain used by the agent planner for priority weighting
+    domain: {
+      type: String,
+      enum: ['startup', 'health', 'family', 'friends', 'errands', 'learning', 'personal'],
+      default: 'personal',
+    },
+
+    // How movable this task is when the day no longer fits
+    elasticity: {
+      type: String,
+      enum: ['fixed', 'movable_today', 'movable_this_week', 'droppable'],
+      default: 'movable_today',
+    },
+
+    // Invisible padding (minutes) added after this task by the planner
+    bufferMinutes: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
     source: {
       type: String,
       enum: ['whatsapp', 'manual', 'calendar', 'system'],
