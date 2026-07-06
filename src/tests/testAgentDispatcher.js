@@ -79,8 +79,9 @@ async function run() {
   check('complete_task', await executeTool('complete_task', { ref: taskRes.created.id }, ctx),
     (r) => r.completed && r.completed.status === 'completed');
 
-  // Anticipation
-  check('get_briefing today', await executeTool('get_briefing', { scope: 'today' }, ctx),
+  // Anticipation. Scope 'week' so the +2h event counts even when the
+  // test runs close to midnight IST.
+  check('get_briefing week', await executeTool('get_briefing', { scope: 'week' }, ctx),
     (r) => Array.isArray(r.events) && r.events.length === 1);
 
   check('scan_conflicts', await executeTool('scan_conflicts', { horizonDays: 3 }, ctx),
@@ -134,8 +135,11 @@ async function run() {
   check('lighten_day light', await executeTool('lighten_day', { level: 'light', reason: 'stressed' }, ctx),
     (r) => Array.isArray(r.deferred));
 
-  check('schedule_break', await executeTool('schedule_break', { durationMinutes: 20, when: null }, ctx),
-    (r) => r.break || r.error);
+  // Late at night there is legitimately no gap left; both outcomes are valid.
+  const breakRes = await executeTool('schedule_break', { durationMinutes: 20, when: null }, ctx);
+  const breakOk = Boolean(breakRes.break) || /No free gap/.test(breakRes.error || '');
+  results['schedule_break'] = breakOk ? 'PASS' : `FAIL: ${JSON.stringify(breakRes)}`;
+  console.log(`${breakOk ? '✅' : '❌'} schedule_break`);
 
   // Memory
   check('save_fact', await executeTool('save_fact', {

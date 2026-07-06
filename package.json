@@ -8,6 +8,8 @@
     "dev": "nodemon src/server.js"
   },
   "dependencies": {
+    "@agendajs/mongo-backend": "^4.0.2",
+    "agenda": "^6.2.5",
     "axios": "^1.15.0",
     "chrono-node": "^2.9.1",
     "cors": "^2.8.5",
@@ -17,7 +19,8 @@
     "mongoose": "^8.3.0",
     "morgan": "^1.10.0",
     "node-cron": "^4.2.1",
-    "openai": "^6.42.0"
+    "openai": "^6.42.0",
+    "twilio": "^6.0.2"
   },
   "devDependencies": {
     "nodemon": "^3.1.0"

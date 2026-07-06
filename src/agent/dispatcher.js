@@ -50,6 +50,20 @@ function escapeRegex(str) {
 }
 
 /**
+ * Rebuild T-minus-5 reminder jobs after a schedule mutation.
+ * Lazy-required to avoid a load-time cycle; no-op when the scheduler
+ * is not running (tests, legacy mode).
+ */
+async function refreshReminders(phoneNumber) {
+  try {
+    const { refreshRemindersForUser } = require('../services/schedulerService');
+    await refreshRemindersForUser(phoneNumber);
+  } catch (err) {
+    console.error('[dispatcher] reminder refresh skipped:', err.message);
+  }
+}
+
+/**
  * Resolve a task/event reference that may be a Mongo id or a title fragment.
  * Returns { kind: 'task'|'event', doc } or null.
  */
@@ -201,6 +215,7 @@ const handlers = {
       source: 'whatsapp',
       ...flags
     });
+    if (scheduledStart) await refreshReminders(ctx.phoneNumber);
     return { created: taskSummary(task) };
   },
 
@@ -223,6 +238,7 @@ const handlers = {
         { upsert: true, setDefaultsOnInsert: true }
       );
     }
+    await refreshReminders(ctx.phoneNumber);
     return { created: eventSummary(event) };
   },
 
@@ -238,6 +254,7 @@ const handlers = {
       t.scheduledEnd = new Date(newStart.getTime() + duration);
       t.notes = `${t.notes ? t.notes + '\n' : ''}MOVED: ${args.reason}`;
       await t.save();
+      await refreshReminders(ctx.phoneNumber);
       return { moved: taskSummary(t) };
     }
 
@@ -247,6 +264,7 @@ const handlers = {
     e.endTime = new Date(newStart.getTime() + duration);
     e.notes = `${e.notes ? e.notes + '\n' : ''}MOVED: ${args.reason}`;
     await e.save();
+    await refreshReminders(ctx.phoneNumber);
     return { moved: eventSummary(e) };
   },
 
@@ -317,6 +335,12 @@ const handlers = {
     }).sort({ scheduledStart: 1, dueDate: 1 });
 
     const dnd = await SessionState.findOne({ phoneNumber: ctx.phoneNumber });
+
+    // Pulling the briefing is the wake-up acknowledgment in agent mode
+    if (dnd && dnd.pendingAction === 'awaiting_wake_up_reply') {
+      dnd.pendingAction = null;
+      await dnd.save();
+    }
 
     return {
       scope: args.scope,
@@ -448,6 +472,7 @@ const handlers = {
     ];
 
     const result = await rescheduleService.rescheduleDay(ctx.phoneNumber);
+    await refreshReminders(ctx.phoneNumber);
 
     const silent =
       args.minutes <= ESCALATION_POLICY.silentShiftMaxMinutes && affectedFixed.length === 0;
@@ -579,6 +604,7 @@ const handlers = {
       source: 'system',
       notes: 'Recovery break'
     });
+    await refreshReminders(ctx.phoneNumber);
     return { break: eventSummary(event) };
   },
 
