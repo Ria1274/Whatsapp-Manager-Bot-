@@ -57,6 +57,26 @@ const handleIncomingMessage = async (text, senderNumber) => {
     sender: `USER: ${senderNumber}`,
   });
 
+  // 2b. Agent mode: LLM tool-calling loop replaces the intent pipeline.
+  // Any failure falls through to the legacy pipeline below.
+  if (process.env.AGENT_MODE === 'true') {
+    try {
+      const { runAgent } = require('../agent/agentLoop');
+      const agentReply = await runAgent(text, senderNumber);
+
+      await ConversationLog.create({
+        message: agentReply,
+        sender: 'BOT',
+        detectedIntent: 'agent',
+        responseText: agentReply
+      });
+
+      return { success: true, intent: 'agent', confidence: 1, responseText: agentReply };
+    } catch (err) {
+      console.error('[whatsappService] Agent loop failed, falling back to legacy pipeline:', err.message);
+    }
+  }
+
   // 3. Process with OpenAI Structured Outputs NLP pipeline
   const nlpResult = await processMessage(text, senderNumber);
   const { intent, confidence, extractedEntities, nextStep } = nlpResult;

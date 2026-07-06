@@ -28,6 +28,10 @@ const sessionStateSchema = new mongoose.Schema(
       type: Date,
       default: () => new Date(Date.now() + 15 * 60 * 1000), // Default session expiration: 15 minutes
     },
+    dndUntil: {
+      type: Date, // Do-not-disturb: suppress proactive messages until this time
+      default: null,
+    },
   },
   {
     timestamps: true,
